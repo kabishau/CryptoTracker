@@ -29,6 +29,7 @@ class ViewController: UIViewController {
 
 
     // takes in URL, and contains completion block which returns an optional value
+    // escaping closure that allowed to be call after function returns
     private func makeValueGETRequest(url: URL, completion: @escaping (_ value: NSNumber?) -> Void) {
         
         // request returns data from call, response(info about call itself) and optinal error in case of failure
@@ -44,6 +45,7 @@ class ViewController: UIViewController {
             
             // fetching JSON response from server (USD value)
             do {
+                // Unwrap the JSON dictionary and read the USD key which has the value of Ethereum
                 guard let json = try JSONSerialization.jsonObject(with: data, options: .allowFragments) as? [String: Any],
                     let value = json["USD"] as? NSNumber else {
                         completion(nil)
@@ -51,6 +53,7 @@ class ViewController: UIViewController {
                 }
                 completion(value)
             } catch {
+                // in case of JSON couldn't be serialize - setting complition as nil
                 completion(nil)
                 print(error.localizedDescription)
             }
