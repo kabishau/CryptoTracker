@@ -1,90 +1,83 @@
 
-
 import UIKit
 
-class ViewController: UIViewController {
-
+class NewViewController: UIViewController {
+    
     @IBOutlet weak var etherValueLabel: UILabel!
     
     /// The CryptoCompare API URL here returns the value of 1 ETH in USD
     let apiURL = URL(string: "https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=USD")
-
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        // unwraping URL
+        // Safely unwrap the API URL since it could be nil
         guard let apiURL = apiURL else {
             return
         }
         
-        // geting back value in NSNumber format using unwrapped URL
+        // Make the GET request for our API URL to get the value NSNumber
         makeValueGETRequest(url: apiURL) { (value) in
-            // making UI being updated on the main thread (GET request works in background)
+            
+            // Must update the UI on the main thread since makeValueGetRequest is a background operation
             DispatchQueue.main.async {
-                // setting the label with value or "Failed"
+                // Set the etherValueLabel with the formatted USD value or "Failed" in the case of failure
                 self.etherValueLabel.text = self.formatAsCurrencyString(value: value) ?? "Failed"
             }
         }
     }
-
-
-    // takes in URL, and contains completion block which returns an optional value
+    
+    /// Takes an API URL and performs a GET request on it to try to get back an NSNumber
+    ///
+    /// - Parameters:
+    ///   - url: The API URL to perform the GET request with
+    ///   - completion: Returns the value as an NSNumber, or nil in the case of failure
     private func makeValueGETRequest(url: URL, completion: @escaping (_ value: NSNumber?) -> Void) {
-        
-        // request returns data from call, response(info about call itself) and optinal error in case of failure
         let request = URLSession.shared.dataTask(with: url) { (data, response, error) in
-            
-            // confirms that data isn't nil and there weren't any errors
+            // Unwrap the data and make sure that an error wasn't returned
             guard let data = data, error == nil else {
+                // If an error was returned set the value in the completion as nil and print the error
                 completion(nil)
-                // using nil coalescing operator - it unwrap the optional value and in case of nil returns empty string
                 print(error?.localizedDescription ?? "")
                 return
             }
             
-            // fetching JSON response from server (USD value)
             do {
+                // Unwrap the JSON dictionary and read the USD key which has the value of Ethereum
                 guard let json = try JSONSerialization.jsonObject(with: data, options: .allowFragments) as? [String: Any],
                     let value = json["USD"] as? NSNumber else {
                         completion(nil)
                         return
                 }
                 completion(value)
-            } catch {
+            } catch  {
+                // If we couldn't serialize the JSON set the value in the completion as nil and print the error
                 completion(nil)
                 print(error.localizedDescription)
             }
         }
-        // starts a call
+        
         request.resume()
     }
     
-    // helper function for converting value number to US currency string
+    /// Takes an optional NSNumber and converts it to USD String
+    ///
+    /// - Parameter value: The NSNumber to convert to a USD String
+    /// - Returns: The USD String or nil in the case of failure
     private func formatAsCurrencyString(value: NSNumber?) -> String? {
-        // class that takes the numbers and represents them in various text formats
+        /// Construct a NumberFormatter that uses the US Locale and the currency style
         let formatter = NumberFormatter()
         formatter.locale = Locale(identifier: "en_US")
         formatter.numberStyle = .currency
         
+        // Ensure the value is non-nil and we can format it using the numberFormatter, if not return nil
         guard let value = value,
             let formattedCurrencyAmount = formatter.string(from: value) else {
-            return nil
+                return nil
         }
         return formattedCurrencyAmount
     }
-
-
 }
-
-
-
-
-
-
-
-
-
-
 
 
 
